@@ -51,6 +51,7 @@ def get_city_id(location: str) -> Union[str, None]:
         data = request_api(url, querystring)
         location_id = data['suggestions'][0]['entities'][0]['destinationId']
         return location_id
+
     except IndexError:
         return None
 
@@ -101,7 +102,12 @@ def get_hotels(city_id: str,
         delta_data = data_second - data_first
         hotels_dict[i_elem['id']]['Дата заезда'] = data_first
         hotels_dict[i_elem['id']]['Дата выезда'] = data_second
-        # hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = i_elem['guestReviews']['unformattedRating']
+
+        try:
+            hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = i_elem['guestReviews']['rating']
+        except KeyError:
+            hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = ' рейтинга нет'
+
         hotels_dict[i_elem['id']]['Расстояние до центра'] = i_elem['landmarks'][0]['distance']
         hotels_dict[i_elem['id']]['Цена за сутки'] = i_elem['ratePlan']['price']['current']
 
@@ -175,7 +181,12 @@ def get_bestdeal_hotels(city_id: str,
                 delta_data = data_second - data_first
                 hotels_dict[i_elem['id']]['Дата заезда'] = data_first
                 hotels_dict[i_elem['id']]['Дата выезда'] = data_second
-                # hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = i_elem['guestReviews']['unformattedRating']
+
+                try:
+                    hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = i_elem['guestReviews']['rating']
+                except KeyError:
+                    hotels_dict[i_elem['id']]['Рейтинг гостиницы'] = ' рейтинга нет'
+
                 hotels_dict[i_elem['id']]['Расстояние до центра'] = i_elem['landmarks'][0]['distance']
                 hotels_dict[i_elem['id']]['Цена за сутки'] = i_elem['ratePlan']['price']['current']
 

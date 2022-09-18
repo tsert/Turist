@@ -60,12 +60,12 @@ def call_back1(call: types.CallbackQuery) -> None:
 
     result, key, step = DetailedTelegramCalendar(calendar_id=1, min_date=date.today(), locale='ru').process(call.data)
     if not result and key:
-        bot.edit_message_text('далее...', call.message.chat.id, call.message.message_id, reply_markup=key)
+        bot.edit_message_text('далее...', chat_id, call.message.message_id, reply_markup=key)
     elif result:
         user.check_in = result
         logger.info(f'{chat_id} написал {result}')
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.delete_message(chat_id, call.message.message_id)
         set_check_out(call.message)
 
 
@@ -77,12 +77,12 @@ def call_back2(call: types.CallbackQuery) -> None:
                                                  min_date=user.check_in + timedelta(days=1),
                                                  locale='ru').process(call.data)
     if not result and key:
-        bot.edit_message_text('далее...', call.message.chat.id, call.message.message_id, reply_markup=key)
+        bot.edit_message_text('далее...', chat_id, call.message.message_id, reply_markup=key)
     elif result:
         user.check_out = result
         logger.info(f'{chat_id} написал {result}')
 
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        bot.delete_message(chat_id, call.message.message_id)
         if user.current_command == '/bestdeal':
             msg = bot.send_message(chat_id, 'Введите желаемую минимальную стоимость в рублях')
             bot.register_next_step_handler(msg, set_price_min_step)

@@ -1,15 +1,17 @@
 from datetime import date, timedelta
 
 import telebot
-from decouple import config
+from config_data import config
 from telebot import types
 from telegram_bot_calendar import DetailedTelegramCalendar
 from loguru import logger
 
-import api_requests
-import users
 
-TOKEN = config('TOKEN')
+import api_requests
+from users import User
+
+
+TOKEN = config.BOT_TOKEN
 bot = telebot.TeleBot(TOKEN)
 logger.add('logs.log', format='{time} {level} {message}')
 
@@ -17,8 +19,8 @@ logger.add('logs.log', format='{time} {level} {message}')
 @bot.message_handler(commands=['start'])
 def start(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
     logger.info(f'{chat_id} написал {message.text}')
 
     bot.send_message(chat_id, 'Привет! Чтобы посмотреть список доступных команд набери /help')
@@ -27,8 +29,8 @@ def start(message: types.Message) -> None:
 @bot.message_handler(commands=['help'])
 def get_help(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
     logger.info(f'{chat_id} написал {message.text}')
 
     bot.send_message(
@@ -44,8 +46,9 @@ def get_help(message: types.Message) -> None:
 @bot.message_handler(commands=['lowprice'])
 def low_price(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
+    # User.user_data
     user.current_command = '/lowprice'
 
     logger.info(f'{chat_id} написал {message.text}')
@@ -57,8 +60,8 @@ def low_price(message: types.Message) -> None:
 @bot.message_handler(commands=['highprice'])
 def get_command(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
     user.sort = 'PRICE_HIGHEST_FIRST'
     user.current_command = '/highprice'
 
@@ -68,11 +71,11 @@ def get_command(message: types.Message) -> None:
     bot.register_next_step_handler(msg, set_city_step)
 
 
-@bot.message_handler(commands='bestdeal')
+@bot.message_handler(commands=['bestdeal'])
 def get_command(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
     user.sort = 'PRICE'
     user.current_command = '/bestdeal'
     logger.info(f'{chat_id} написал {message.text}')
@@ -81,11 +84,11 @@ def get_command(message: types.Message) -> None:
     bot.register_next_step_handler(msg, set_city_step)
 
 
-@bot.message_handler(commands='history')
+@bot.message_handler(commands=['history'])
 def get_history(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.User(chat_id)
-    users.user_data[chat_id] = user
+    user = User.user_data(chat_id)
+    User.user_data[chat_id] = user
     logger.info(f'{chat_id} написал {message.text}')
 
     try:
@@ -106,7 +109,7 @@ def get_history(message: types.Message) -> None:
 
 def set_city_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isalpha():
@@ -125,14 +128,14 @@ def set_city_step(message: types.Message) -> None:
 
 def set_check_in(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    # user = User.user_data[chat_id]
     calendar, step = DetailedTelegramCalendar(calendar_id=1, min_date=date.today(), locale='ru').build()
     bot.send_message(chat_id, 'выберите дату заезда', reply_markup=calendar)
 
 
 def set_check_out(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     calendar, step = DetailedTelegramCalendar(calendar_id=2,
                                               min_date=user.check_in + timedelta(days=1), locale='ru').build()
     bot.send_message(chat_id, 'выберите дату выезда', reply_markup=calendar)
@@ -141,7 +144,7 @@ def set_check_out(message: types.Message) -> None:
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=1))
 def call_back1(call: types.CallbackQuery) -> None:
     chat_id = call.message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
 
     result, key, step = DetailedTelegramCalendar(calendar_id=1, min_date=date.today(), locale='ru').process(call.data)
     if not result and key:
@@ -157,7 +160,7 @@ def call_back1(call: types.CallbackQuery) -> None:
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id=2))
 def call_back2(call: types.CallbackQuery) -> None:
     chat_id = call.message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     result, key, step = DetailedTelegramCalendar(calendar_id=2,
                                                  min_date=user.check_in + timedelta(days=1),
                                                  locale='ru').process(call.data)
@@ -180,7 +183,7 @@ def call_back2(call: types.CallbackQuery) -> None:
 
 def set_price_min_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit():
@@ -195,7 +198,7 @@ def set_price_min_step(message: types.Message) -> None:
 
 def set_price_max_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit() or int(user.price_min) > int(message.text):
@@ -209,7 +212,7 @@ def set_price_max_step(message: types.Message) -> None:
 
 def set_min_distance_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit():
@@ -223,7 +226,7 @@ def set_min_distance_step(message: types.Message) -> None:
 
 def set_max_distance_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit() or int(user.min_distance_from_center) > int(message.text):
@@ -240,7 +243,7 @@ def set_max_distance_step(message: types.Message) -> None:
 
 def set_number_hotels_step(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit():
@@ -257,7 +260,7 @@ def set_number_hotels_step(message: types.Message) -> None:
 
 def show_photo(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if message.text.lower() == 'нет':
@@ -278,7 +281,7 @@ def show_photo(message: types.Message) -> None:
 
 def set_photo_num(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
     logger.info(f'{chat_id} написал {message.text}')
 
     if not message.text.isdigit():
@@ -294,7 +297,7 @@ def set_photo_num(message: types.Message) -> None:
 @logger.catch
 def send_results(message: types.Message) -> None:
     chat_id = message.chat.id
-    user = users.user_data[chat_id]
+    user = User.user_data[chat_id]
 
     if user.current_command == '/bestdeal':
         logger.info('Работает функция для /bestdeal')
@@ -317,7 +320,7 @@ def send_results(message: types.Message) -> None:
                                               check_out=user.check_out,
                                               sort=user.sort)
     if user.hotels is None:
-        logger.info(f' для {users.user_data[chat_id]} ничего не найдено')
+        logger.info(f' для {User.user_data[chat_id]} ничего не найдено')
         bot.send_message(chat_id, 'По заданным параметрам не удалось ничего найти')
 
     if user.hotels:
